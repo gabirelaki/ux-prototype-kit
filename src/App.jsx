@@ -8,6 +8,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
   Table,
   TableBody,
   TableCell,
@@ -33,6 +42,26 @@ const SIDEBAR_ITEMS = [
   { id: 'invoices', label: 'Invoices & Orders' },
   { id: 'support', label: 'Support' },
 ]
+
+const QUICK_CHECK_QUESTIONS = [
+  'Does this device pass the quick check criteria?',
+  'Is the AED free of chirping or warning notifications?',
+  'Does the AED appear to be undamaged and ready for use?',
+  'Are the AED supplies present (CPR kit and electrode pads)?',
+]
+
+const DETAIL_DEVICE = {
+  name: 'Cardiac Science Powerheart G5',
+  model: 'Powerheart G5',
+  serial: 'CS-G5-2024-00891',
+  lot: 'LOT-2024-1182',
+  sku: 'CS-G5-AED-WALL',
+  location: 'Main Lobby',
+  sitePlacement: 'Building A — Wall mount near reception',
+  readiness: 'Ready',
+  compliance: 'Compliant',
+  inspectionDate: 'Mar 15, 2026',
+}
 
 const DASHBOARD_DEVICES = [
   {
@@ -88,6 +117,18 @@ const EQUIPMENT_DEVICES = [
   },
 ]
 
+function formatToday() {
+  return new Date().toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function countWords(text) {
+  return text.trim() ? text.trim().split(/\s+/).length : 0
+}
+
 function StatusBadge({ status }) {
   const styles = {
     Pass: 'bg-green-100 text-green-800 border-green-200',
@@ -99,6 +140,24 @@ function StatusBadge({ status }) {
     <Badge variant="outline" className={cn('border', styles[status])}>
       {status}
     </Badge>
+  )
+}
+
+function InspectionDueCell({ status, inspectionDue }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      {status === 'Needs Review' && (
+        <span className="text-xs font-semibold tracking-wide text-orange-600">
+          DUE IN 3 DAYS
+        </span>
+      )}
+      {status === 'Fail' && (
+        <span className="text-xs font-semibold tracking-wide text-red-600">
+          OVERDUE
+        </span>
+      )}
+      <span>{inspectionDue}</span>
+    </div>
   )
 }
 
@@ -127,7 +186,10 @@ function TopNav() {
 
 function Sidebar({ activeNav, onNavigate }) {
   return (
-    <aside className="flex w-56 shrink-0 flex-col border-r bg-muted/30">
+    <aside className="flex w-56 shrink-0 flex-col bg-gray-900 text-white">
+      <div className="border-b border-gray-800 px-4 py-4">
+        <p className="text-xs text-gray-400">City University</p>
+      </div>
       <nav className="flex flex-col gap-0.5 p-3">
         {SIDEBAR_ITEMS.map((item) => {
           const isActive =
@@ -145,8 +207,8 @@ function Sidebar({ activeNav, onNavigate }) {
               className={cn(
                 'rounded-md px-3 py-2 text-left text-sm transition-colors',
                 isActive
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  ? 'bg-white font-medium text-gray-900'
+                  : 'text-gray-300 hover:bg-gray-800 hover:text-white',
                 item.id !== 'dashboard' &&
                   item.id !== 'equipment' &&
                   'cursor-default opacity-60',
@@ -199,7 +261,12 @@ function DeviceTable({ rows, onRowClick, showActions = false }) {
                 <TableCell>
                   <StatusBadge status={row.status} />
                 </TableCell>
-                <TableCell>{row.inspectionDue}</TableCell>
+                <TableCell>
+                  <InspectionDueCell
+                    status={row.status}
+                    inspectionDue={row.inspectionDue}
+                  />
+                </TableCell>
                 {showActions && (
                   <TableCell className="text-right">
                     <div
@@ -208,14 +275,15 @@ function DeviceTable({ rows, onRowClick, showActions = false }) {
                     >
                       <Button
                         size="sm"
-                        className="bg-green-600 text-white hover:bg-green-700"
+                        variant="outline"
+                        className="border-green-600 bg-transparent text-green-600 hover:bg-green-50"
                       >
                         Pass
                       </Button>
                       <Button
                         size="sm"
-                        variant="destructive"
-                        className="bg-red-600 text-white hover:bg-red-700"
+                        variant="outline"
+                        className="border-red-600 bg-transparent text-red-600 hover:bg-red-50"
                       >
                         Fail
                       </Button>
@@ -302,66 +370,238 @@ function EquipmentScreen({ onNavigate }) {
   )
 }
 
-function DetailScreen({ onNavigate }) {
-  const fields = [
-    { label: 'Location', value: 'Main Lobby' },
-    { label: 'Site & Placement', value: 'Building A — Wall mount near reception' },
-    { label: 'Serial', value: 'CS-G5-2024-00891' },
-    { label: 'Status', value: <StatusBadge status="Pass" /> },
-    { label: 'Readiness Status', value: 'Ready' },
-    { label: 'Compliance Status', value: 'Compliant' },
-    { label: 'Inspection Date', value: 'Mar 15, 2026' },
-    { label: 'Last Check', value: 'May 10, 2026 — Mary Lin' },
-  ]
+function StatusCheckModal({ open, onOpenChange, outcome, onSubmit }) {
+  const [checkedBy, setCheckedBy] = useState('Mary Lin')
+  const [notes, setNotes] = useState('')
+  const [answers, setAnswers] = useState(
+    () => QUICK_CHECK_QUESTIONS.map(() => 'yes'),
+  )
 
-  const leftCol = fields.slice(0, 4)
-  const rightCol = fields.slice(4)
+  const wordCount = countWords(notes)
+
+  const handleNotesChange = (e) => {
+    const next = e.target.value
+    if (countWords(next) <= 100) setNotes(next)
+  }
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    onSubmit({ checkedBy, outcome })
+    setNotes('')
+    setAnswers(QUICK_CHECK_QUESTIONS.map(() => 'yes'))
+    setCheckedBy('Mary Lin')
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Quick Status Check</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit}>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-4">
+              <h3 className="font-semibold">{DETAIL_DEVICE.name}</h3>
+              <div className="flex h-[200px] w-[200px] items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400">
+                Device image
+              </div>
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Model</dt>
+                  <dd className="font-medium">{DETAIL_DEVICE.model}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Serial Number</dt>
+                  <dd className="font-medium">{DETAIL_DEVICE.serial}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Lot Number</dt>
+                  <dd className="font-medium">{DETAIL_DEVICE.lot}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">SKU</dt>
+                  <dd className="font-medium">{DETAIL_DEVICE.sku}</dd>
+                </div>
+              </dl>
+            </div>
+            <div className="space-y-5">
+              {QUICK_CHECK_QUESTIONS.map((question, index) => (
+                <fieldset key={question} className="space-y-2">
+                  <legend className="text-sm font-medium">{question}</legend>
+                  <div className="flex gap-4">
+                    {['yes', 'no'].map((value) => (
+                      <label
+                        key={value}
+                        className="flex cursor-pointer items-center gap-2 text-sm capitalize"
+                      >
+                        <input
+                          type="radio"
+                          name={`question-${index}`}
+                          value={value}
+                          checked={answers[index] === value}
+                          onChange={() => {
+                            const next = [...answers]
+                            next[index] = value
+                            setAnswers(next)
+                          }}
+                          className="size-4 accent-primary"
+                        />
+                        {value}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+              <div className="space-y-2">
+                <Label htmlFor="checked-by">Checked By</Label>
+                <Input
+                  id="checked-by"
+                  value={checkedBy}
+                  onChange={(e) => setCheckedBy(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <span className="text-xs text-muted-foreground">
+                    {wordCount}/100
+                  </span>
+                </div>
+                <Textarea
+                  id="notes"
+                  value={notes}
+                  onChange={handleNotesChange}
+                  rows={3}
+                  placeholder="Add any notes about this check..."
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <Button
+              type="submit"
+              className={cn(
+                'min-w-[120px]',
+                outcome === 'Pass'
+                  ? 'bg-green-600 text-white hover:bg-green-700'
+                  : 'bg-red-600 text-white hover:bg-red-700',
+              )}
+            >
+              SUBMIT
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function DetailScreen({ onNavigate }) {
+  const [status, setStatus] = useState('Pass')
+  const [lastCheck, setLastCheck] = useState({
+    result: 'Pass',
+    date: 'May 10, 2026',
+    by: 'Mary Lin',
+  })
+  const [modalOpen, setModalOpen] = useState(false)
+  const [checkOutcome, setCheckOutcome] = useState('Pass')
+
+  const openQuickCheck = (outcome) => {
+    setCheckOutcome(outcome)
+    setModalOpen(true)
+  }
+
+  const handleSubmitCheck = ({ checkedBy, outcome }) => {
+    setStatus(outcome)
+    setLastCheck({
+      result: outcome,
+      date: formatToday(),
+      by: checkedBy,
+    })
+    setModalOpen(false)
+  }
+
+  const fields = [
+    { label: 'Location', value: DETAIL_DEVICE.location },
+    { label: 'Site & Placement', value: DETAIL_DEVICE.sitePlacement },
+    { label: 'Serial', value: DETAIL_DEVICE.serial },
+    { label: 'Status', value: <StatusBadge status={status} /> },
+    { label: 'Readiness Status', value: DETAIL_DEVICE.readiness },
+    { label: 'Compliance Status', value: DETAIL_DEVICE.compliance },
+    { label: 'Inspection Date', value: DETAIL_DEVICE.inspectionDate },
+    {
+      label: 'Last Check',
+      value: `${lastCheck.date} — ${lastCheck.by}`,
+    },
+  ]
 
   return (
     <>
       <p className="mb-2 text-sm text-muted-foreground">
         Equipment / Inspectable Equipment / Device Detail
       </p>
-      <h1 className="mb-6 text-2xl font-semibold">
-        Cardiac Science Powerheart G5
-      </h1>
-      <Card className="mb-8 max-w-3xl">
-        <CardContent className="grid gap-6 pt-4 sm:grid-cols-2">
-          <dl className="space-y-4">
-            {leftCol.map(({ label, value }) => (
+      <h1 className="mb-6 text-2xl font-semibold">{DETAIL_DEVICE.name}</h1>
+
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <Card className="min-w-0 flex-1">
+          <CardContent className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
+            {fields.map(({ label, value }) => (
               <div key={label}>
                 <dt className="text-sm text-muted-foreground">{label}</dt>
                 <dd className="mt-1 text-sm font-medium">{value}</dd>
               </div>
             ))}
-          </dl>
-          <dl className="space-y-4">
-            {rightCol.map(({ label, value }) => (
-              <div key={label}>
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="mt-1 text-sm font-medium">{value}</dd>
-              </div>
-            ))}
-          </dl>
-        </CardContent>
-      </Card>
-      <div className="flex flex-wrap items-center gap-4">
+          </CardContent>
+        </Card>
+
+        <Card className="w-full shrink-0 lg:w-[280px]">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm font-semibold tracking-wide">
+              STATUS CHECK
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button
+              className="w-full bg-green-600 text-white hover:bg-green-700"
+              onClick={() => openQuickCheck('Pass')}
+            >
+              PASS QUICK CHECK
+            </Button>
+            <Button
+              className="w-full bg-red-600 text-white hover:bg-red-700"
+              onClick={() => openQuickCheck('Fail')}
+            >
+              FAIL QUICK CHECK
+            </Button>
+            <Button variant="outline" className="w-full">
+              FULL STATUS CHECK
+            </Button>
+            <div className="space-y-2 border-t pt-4">
+              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Last Check
+              </p>
+              <StatusBadge status={lastCheck.result} />
+              <p className="text-sm">{lastCheck.date}</p>
+              <p className="text-sm text-muted-foreground">
+                Checked by {lastCheck.by}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="mt-8">
         <Button variant="outline" onClick={() => onNavigate(SCREENS.equipment)}>
           Back
         </Button>
-        <Button
-          size="lg"
-          className="min-w-[120px] bg-green-600 text-white hover:bg-green-700"
-        >
-          Pass
-        </Button>
-        <Button
-          size="lg"
-          className="min-w-[120px] bg-red-600 text-white hover:bg-red-700"
-        >
-          Fail
-        </Button>
       </div>
+
+      <StatusCheckModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        outcome={checkOutcome}
+        onSubmit={handleSubmitCheck}
+      />
     </>
   )
 }
