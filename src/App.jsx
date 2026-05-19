@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Globe } from 'lucide-react'
+import { Globe, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -8,12 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -63,6 +58,24 @@ const DETAIL_DEVICE = {
   compliance: 'Compliant',
   inspectionDate: 'Mar 15, 2026',
 }
+
+const STATUS_CHECK_MODAL_DEVICE = {
+  displayName: 'ZOLL AED PLUS',
+  model: 'Cardiac Science Powerheart G5',
+  serial: 'CS-G5-2024-00891',
+  lot: '3351',
+  sku: 'ABC-12345-S-BL',
+  fields: [
+    { label: 'Model', value: 'Cardiac Science Powerheart G5' },
+    { label: 'Serial Number', value: 'CS-G5-2024-00891' },
+    { label: 'Lot Number', value: '3351' },
+    { label: 'SKU', value: 'ABC-12345-S-BL' },
+    { label: 'Dates/Expirations', value: 'AUG 12 2023' },
+    { label: 'Dates/Expirations', value: 'AUG 12 2023' },
+  ],
+}
+
+const LAST_CHECK_DATE = 'May 18, 2026'
 
 const DASHBOARD_DEVICES = [
   {
@@ -117,14 +130,6 @@ const EQUIPMENT_DEVICES = [
     inspectionDue: 'May 18, 2026',
   },
 ]
-
-function formatToday() {
-  return new Date().toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
 
 function countWords(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0
@@ -441,107 +446,97 @@ function StatusCheckModal({ open, onOpenChange, outcome, onSubmit }) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>Quick Status Check</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-4">
-              <h3 className="font-semibold">{DETAIL_DEVICE.name}</h3>
-              <div className="flex h-[200px] w-[200px] items-center justify-center rounded-md bg-gray-100 text-sm text-gray-400">
-                Device image
+      <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-4xl">
+        <form onSubmit={handleSubmit} className="flex flex-col">
+          <div className="flex max-h-[min(90vh,720px)] flex-col overflow-y-auto md:flex-row">
+            <div className="w-full shrink-0 bg-gray-50 p-4 md:w-[280px]">
+              <div className="mb-4 flex items-center gap-2">
+                <Wrench className="size-4 shrink-0 text-gray-600" />
+                <h3 className="text-xs font-bold tracking-wide text-gray-900 uppercase">
+                  {STATUS_CHECK_MODAL_DEVICE.displayName}
+                </h3>
               </div>
-              <dl className="space-y-3 text-sm">
-                <div>
-                  <dt className="text-muted-foreground">Model</dt>
-                  <dd className="font-medium">{DETAIL_DEVICE.model}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Serial Number</dt>
-                  <dd className="font-medium">{DETAIL_DEVICE.serial}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Lot Number</dt>
-                  <dd className="font-medium">{DETAIL_DEVICE.lot}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">SKU</dt>
-                  <dd className="font-medium">{DETAIL_DEVICE.sku}</dd>
-                </div>
-              </dl>
-            </div>
-            <div className="space-y-5">
-              {QUICK_CHECK_QUESTIONS.map((question, index) => (
-                <fieldset key={question} className="space-y-2">
-                  <legend className="text-sm font-medium">{question}</legend>
-                  <div className="flex gap-4">
-                    {['yes', 'no'].map((value) => (
-                      <label
-                        key={value}
-                        className="flex cursor-pointer items-center gap-2 text-sm capitalize"
-                      >
-                        <input
-                          type="radio"
-                          name={`question-${index}`}
-                          value={value}
-                          checked={answers[index] === value}
-                          onChange={() => {
-                            const next = [...answers]
-                            next[index] = value
-                            setAnswers(next)
-                          }}
-                          className="size-4 accent-primary"
-                        />
-                        {value}
-                      </label>
-                    ))}
+              <div className="mb-4 h-48 w-full rounded bg-gray-200" />
+              <div className="grid grid-cols-2 gap-4">
+                {STATUS_CHECK_MODAL_DEVICE.fields.map((field, index) => (
+                  <div key={`${field.label}-${index}`}>
+                    <p className="text-xs text-gray-500">{field.label}</p>
+                    <p className="mt-0.5 text-sm font-bold text-gray-900">
+                      {field.value}
+                    </p>
                   </div>
-                </fieldset>
-              ))}
-              <div className="space-y-2">
-                <Label htmlFor="checked-by">Checked By</Label>
-                <Input
-                  id="checked-by"
-                  value={checkedBy}
-                  onChange={(e) => setCheckedBy(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="notes">Notes (Optional)</Label>
-                  <span className="text-xs text-muted-foreground">
-                    {wordCount}/100
-                  </span>
-                </div>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={handleNotesChange}
-                  rows={3}
-                  placeholder="Add any notes about this check..."
-                />
+                ))}
               </div>
             </div>
-          </div>
-          <div className="mt-6 flex justify-end">
-            <Button
-              type="submit"
-              className={cn(
-                'min-w-[120px]',
-                outcome === 'Pass'
-                  ? 'bg-green-600 text-white hover:bg-green-700'
-                  : 'bg-red-600 text-white hover:bg-red-700',
-              )}
-            >
-              SUBMIT
-            </Button>
+            <div className="flex flex-1 flex-col p-6">
+              <div className="flex-1">
+                {QUICK_CHECK_QUESTIONS.map((question, index) => (
+                  <fieldset key={question} className="mb-6">
+                    <legend className="mb-2 text-sm font-bold text-gray-900">
+                      {question}
+                    </legend>
+                    <div className="flex gap-6">
+                      {[
+                        { value: 'yes', label: 'Yes' },
+                        { value: 'no', label: 'No' },
+                      ].map(({ value, label }) => (
+                        <label
+                          key={value}
+                          className="flex cursor-pointer items-center gap-2 text-sm"
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${index}`}
+                            value={value}
+                            checked={answers[index] === value}
+                            onChange={() => {
+                              const next = [...answers]
+                              next[index] = value
+                              setAnswers(next)
+                            }}
+                            className="size-4 accent-gray-900"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                ))}
+                <div className="mt-6 space-y-2">
+                  <Label htmlFor="checked-by">Checked By</Label>
+                  <Input
+                    id="checked-by"
+                    value={checkedBy}
+                    onChange={(e) => setCheckedBy(e.target.value)}
+                  />
+                </div>
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="notes">Notes (Optional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={handleNotesChange}
+                    rows={3}
+                  />
+                  <p className="text-xs text-gray-500">
+                    {wordCount} / 100 words
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="submit"
+                className="mt-6 w-full bg-gray-900 text-white hover:bg-gray-800"
+              >
+                SUBMIT
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
+
 
 function DetailScreen({ onNavigate }) {
   const [status, setStatus] = useState('Pass')
@@ -562,7 +557,7 @@ function DetailScreen({ onNavigate }) {
     setStatus(outcome)
     setLastCheck({
       result: outcome,
-      date: formatToday(),
+      date: LAST_CHECK_DATE,
       by: checkedBy,
     })
     setModalOpen(false)
