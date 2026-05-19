@@ -60,12 +60,17 @@ const DETAIL_DEVICE = {
   model: 'Powerheart G5',
   serial: 'CS-G5-2024-00891',
   lot: 'LOT-2024-1182',
-  sku: 'CS-G5-AED-WALL',
+  sku: 'ABC-12345-S-BL',
   location: 'Main Lobby',
   sitePlacement: 'Building A — Wall mount near reception',
-  readiness: 'Ready',
-  compliance: 'Compliant',
+  setupStatus: 'Pending',
+  readinessStatus: 'Pass',
+  complianceStatus: 'Ready',
   inspectionDate: 'Mar 15, 2026',
+  batteryInstallDate: 'Jan 10, 2024',
+  batteryExpiration: 'Jan 10, 2028',
+  padExpiration: 'Jun 30, 2026',
+  batteryLevel: '87%',
 }
 
 const STATUS_CHECK_MODAL_DEVICE = {
@@ -220,7 +225,7 @@ function GreenLink({ children, className }) {
   return (
     <span
       className={cn(
-        'cursor-pointer font-medium text-green-600 hover:underline',
+        'cursor-pointer font-medium text-blue-600 hover:text-blue-800',
         className,
       )}
     >
@@ -244,6 +249,7 @@ function StatusBadge({ status }) {
     'Needs Review': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     Fail: 'bg-red-100 text-red-800 border-red-200',
     Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    Ready: 'bg-green-100 text-green-800 border-green-200',
     Open: 'bg-green-100 text-green-800 border-green-200',
     Closed: 'bg-gray-100 text-gray-700 border-gray-200',
   }
@@ -510,34 +516,93 @@ function StatusChecksCard() {
   )
 }
 
-function DeviceImageCard() {
+function DeviceInfoCard({ status, lastCheck }) {
+  const bottomFields = [
+    { label: 'Location', value: DETAIL_DEVICE.location },
+    { label: 'Site & Placement', value: DETAIL_DEVICE.sitePlacement },
+    { label: 'Inspection Date', value: DETAIL_DEVICE.inspectionDate },
+    {
+      label: 'Last Check',
+      value: `${lastCheck.date} — ${lastCheck.by}`,
+    },
+    { label: 'Battery Install Date', value: DETAIL_DEVICE.batteryInstallDate },
+    { label: 'Battery Expiration', value: DETAIL_DEVICE.batteryExpiration },
+    { label: 'Pad Expiration', value: DETAIL_DEVICE.padExpiration },
+    { label: 'Battery Level', value: DETAIL_DEVICE.batteryLevel },
+  ]
+
   return (
     <Card>
       <CardContent className="pt-4">
-        <div className="flex h-48 w-full items-center justify-center rounded bg-gray-200 text-sm text-gray-500">
-          Device Image
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="w-full shrink-0 lg:w-[240px]">
+            <div className="h-48 w-full rounded bg-gray-200" />
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              {[0, 1, 2].map((thumb) => (
+                <div
+                  key={thumb}
+                  className="size-10 shrink-0 rounded bg-gray-200"
+                />
+              ))}
+              <button
+                type="button"
+                className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
+                aria-label="Next image"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="min-w-0 flex-1 space-y-3">
+            <h2 className="text-xl font-semibold">{DETAIL_DEVICE.name}</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Status:</span>
+              <StatusBadge status={status} />
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Serial number</p>
+              <p className="mt-0.5 text-sm font-medium">{DETAIL_DEVICE.serial}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">SKU</p>
+              <p className="mt-0.5 text-sm font-medium">{DETAIL_DEVICE.sku}</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Setup Status:</span>
+              <StatusBadge status={DETAIL_DEVICE.setupStatus} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Readiness Status:
+              </span>
+              <StatusBadge status={DETAIL_DEVICE.readinessStatus} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Compliance Status:
+              </span>
+              <StatusBadge status={DETAIL_DEVICE.complianceStatus} />
+            </div>
+          </div>
         </div>
-        <div className="mt-4 flex items-center justify-center gap-2">
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
-            aria-label="Previous image"
-          >
-            <ChevronLeft className="size-4" />
-          </button>
-          {[0, 1, 2].map((thumb) => (
-            <div
-              key={thumb}
-              className="size-12 shrink-0 rounded bg-gray-200"
-            />
+
+        <hr className="my-6 border-border" />
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+          {bottomFields.map(({ label, value }) => (
+            <div key={label}>
+              <dt className="text-sm text-muted-foreground">{label}</dt>
+              <dd className="mt-1 text-sm font-medium">{value}</dd>
+            </div>
           ))}
-          <button
-            type="button"
-            className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
-            aria-label="Next image"
-          >
-            <ChevronRight className="size-4" />
-          </button>
         </div>
       </CardContent>
     </Card>
@@ -871,40 +936,15 @@ function DetailScreen({ onNavigate }) {
     setModalOpen(false)
   }
 
-  const fields = [
-    { label: 'Location', value: DETAIL_DEVICE.location },
-    { label: 'Site & Placement', value: DETAIL_DEVICE.sitePlacement },
-    { label: 'Serial', value: DETAIL_DEVICE.serial },
-    { label: 'Status', value: <StatusBadge status={status} /> },
-    { label: 'Readiness Status', value: DETAIL_DEVICE.readiness },
-    { label: 'Compliance Status', value: DETAIL_DEVICE.compliance },
-    { label: 'Inspection Date', value: DETAIL_DEVICE.inspectionDate },
-    {
-      label: 'Last Check',
-      value: `${lastCheck.date} — ${lastCheck.by}`,
-    },
-  ]
-
   return (
     <>
       <p className="mb-2 text-sm text-muted-foreground">
         Equipment / Inspectable Equipment / Device Detail
       </p>
-      <h1 className="mb-6 text-2xl font-semibold">{DETAIL_DEVICE.name}</h1>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
-          <DeviceImageCard />
-          <Card>
-            <CardContent className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
-              {fields.map(({ label, value }) => (
-                <div key={label}>
-                  <dt className="text-sm text-muted-foreground">{label}</dt>
-                  <dd className="mt-1 text-sm font-medium">{value}</dd>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+          <DeviceInfoCard status={status} lastCheck={lastCheck} />
 
           <RegistrationStatusCard />
           <AccessoriesCard />
