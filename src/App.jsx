@@ -1,5 +1,14 @@
 import { useState } from 'react'
-import { Globe, Wrench } from 'lucide-react'
+import {
+  Bell,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Globe,
+  Search,
+  ShoppingCart,
+  Wrench,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -135,6 +144,54 @@ function countWords(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0
 }
 
+const ACCESSORIES_ROWS = [
+  {
+    manufacturer: 'Duracell 100X',
+    type: 'Battery',
+    lot: '3045666C',
+    installed: 'Yes',
+    expiration: 'Jul 26 2025 (1 year from now)',
+    expirationClass: 'text-green-600',
+  },
+  {
+    manufacturer: 'First Aid Cabinet',
+    type: 'Cabinet',
+    lot: '20230705A',
+    installed: 'Yes',
+    expiration: 'Jul 24 2024 (6 months overdue)',
+    expirationClass: 'text-red-600',
+  },
+  {
+    manufacturer: 'Heartsine Samaritan PAD 305P',
+    type: 'Pads',
+    lot: '444921338',
+    installed: 'No',
+    expiration: 'Jul 24 2024 (6 months overdue)',
+    expirationClass: 'text-red-600',
+  },
+]
+
+const SUPPORT_TICKETS_ROWS = [
+  {
+    description: 'AED Usage Event',
+    date: 'April 30 2023',
+    creator: 'William Robertson',
+    status: 'Open',
+  },
+  {
+    description: 'AED Usage Event',
+    date: 'April 30 2023',
+    creator: 'William Robertson',
+    status: 'Open',
+  },
+  {
+    description: 'AED Usage Event',
+    date: 'April 30 2023',
+    creator: 'William Robertson',
+    status: 'Closed',
+  },
+]
+
 const STATUS_CHECKS_HISTORY = [
   {
     timestamp: 'Apr 22 2024, 12:50pm EST',
@@ -186,12 +243,55 @@ function StatusBadge({ status }) {
     Pass: 'bg-green-100 text-green-800 border-green-200',
     'Needs Review': 'bg-yellow-100 text-yellow-800 border-yellow-200',
     Fail: 'bg-red-100 text-red-800 border-red-200',
+    Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+    Open: 'bg-green-100 text-green-800 border-green-200',
+    Closed: 'bg-gray-100 text-gray-700 border-gray-200',
   }
 
   return (
     <Badge variant="outline" className={cn('border', styles[status])}>
       {status}
     </Badge>
+  )
+}
+
+function TablePaginationFooter({ totalLabel }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+      <p className="text-sm text-muted-foreground">{totalLabel}</p>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="sm" disabled>
+          Previous
+        </Button>
+        <Button variant="outline" size="sm" className="min-w-8">
+          1
+        </Button>
+        <Button variant="ghost" size="sm" className="min-w-8">
+          2
+        </Button>
+        <Button variant="ghost" size="sm" className="min-w-8">
+          3
+        </Button>
+        <Button variant="outline" size="sm">
+          Next
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function CardTableHeader({ title, actionLabel }) {
+  return (
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+      <CardTitle className="text-sm font-semibold tracking-wide">
+        {title}
+      </CardTitle>
+      {actionLabel && (
+        <Button variant="outline" size="sm">
+          {actionLabel}
+        </Button>
+      )}
+    </CardHeader>
   )
 }
 
@@ -213,26 +313,234 @@ function InspectionDueCell({ status, inspectionDue }) {
   )
 }
 
+function NavIconButton({ icon: Icon, badge, label }) {
+  return (
+    <button
+      type="button"
+      className="relative text-gray-600 hover:text-gray-900"
+      aria-label={label}
+    >
+      <Icon className="size-5" />
+      <span className="absolute -top-1.5 -right-1.5 flex size-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-semibold text-white">
+        {badge}
+      </span>
+    </button>
+  )
+}
+
 function TopNav() {
   return (
-    <header className="flex h-14 shrink-0 items-center gap-4 border-b bg-white px-4">
-      <span className="text-lg font-semibold tracking-tight">Arch</span>
-      <input
-        type="search"
-        placeholder="Search devices, locations..."
-        className="h-8 max-w-md flex-1 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground"
-      />
-      <Button className="bg-yellow-400 text-yellow-950 hover:bg-yellow-500">
-        Status Check
-      </Button>
-      <Button variant="ghost" size="sm" className="text-muted-foreground">
-        Notifications
-      </Button>
-      <Button variant="ghost" size="sm" className="text-muted-foreground">
-        Cart
-      </Button>
-      <span className="text-sm font-medium">Mary Lin</span>
+    <header className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-6 border-b bg-white px-6 py-3">
+      <div className="flex items-center gap-2">
+        <span className="size-2 shrink-0 rounded-full bg-green-500" />
+        <span className="text-lg font-bold tracking-tight lowercase">arch</span>
+      </div>
+
+      <div className="relative mx-auto w-full max-w-xl justify-self-center">
+        <input
+          type="search"
+          placeholder="Search devices, locations..."
+          className="h-9 w-full rounded-md border border-input bg-background py-2 pr-10 pl-3 text-sm placeholder:text-muted-foreground"
+        />
+        <Search className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
+
+      <div className="flex items-center justify-end gap-5">
+        <NavIconButton icon={Bell} badge={9} label="Notifications" />
+        <NavIconButton icon={ShoppingCart} badge={9} label="Cart" />
+        <Button className="rounded-md bg-yellow-400 px-4 font-semibold text-black hover:bg-yellow-500">
+          STATUS CHECK
+        </Button>
+        <button
+          type="button"
+          className="flex items-center gap-2 text-gray-900 hover:opacity-80"
+        >
+          <span className="size-8 shrink-0 rounded-full bg-gray-300" />
+          <span className="text-sm font-semibold tracking-wide">MARY LIN</span>
+          <ChevronDown className="size-4 text-gray-500" />
+        </button>
+      </div>
     </header>
+  )
+}
+
+
+function RegistrationStatusCard() {
+  const columns = [
+    { label: 'Agency Filing Status', status: 'Pass', link: 'VIEW FILING' },
+    { label: 'Prescription Status', status: 'Pass', link: 'VIEW PRESCRIPTION' },
+    { label: 'Response Plan', status: 'Pending', link: null },
+  ]
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wide">
+          <span className="size-4 rounded bg-gray-200" aria-hidden />
+          REGISTRATION STATUS
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+        {columns.map((col) => (
+          <div key={col.label} className="space-y-2">
+            <p className="text-sm text-muted-foreground">{col.label}</p>
+            <StatusBadge status={col.status} />
+            {col.link && (
+              <GreenLink className="block text-xs">{col.link}</GreenLink>
+            )}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
+function AccessoriesCard() {
+  return (
+    <Card>
+      <CardTableHeader title="ACCESSORIES & CONSUMABLES" actionLabel="ADD/REPLACE" />
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Manufacturer & Model</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Lot</TableHead>
+              <TableHead>Installed</TableHead>
+              <TableHead>Expiration</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {ACCESSORIES_ROWS.map((row) => (
+              <TableRow key={row.lot}>
+                <TableCell className="font-medium">{row.manufacturer}</TableCell>
+                <TableCell>{row.type}</TableCell>
+                <TableCell>{row.lot}</TableCell>
+                <TableCell>{row.installed}</TableCell>
+                <TableCell className={cn('text-sm', row.expirationClass)}>
+                  {row.expiration}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <div className="border-t px-4 py-3">
+          <p className="text-sm text-muted-foreground">Total 3 Items</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SupportTicketsCard() {
+  return (
+    <Card>
+      <CardTableHeader title="SUPPORT TICKETS" actionLabel="EXPORT" />
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Description</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Creator</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Notes</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {SUPPORT_TICKETS_ROWS.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  <GreenLink>{row.description}</GreenLink>
+                </TableCell>
+                <TableCell className="text-sm">{row.date}</TableCell>
+                <TableCell className="text-sm">{row.creator}</TableCell>
+                <TableCell>
+                  <StatusBadge status={row.status} />
+                </TableCell>
+                <TableCell>
+                  <GreenLink className="text-sm">VIEW</GreenLink>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TablePaginationFooter totalLabel="Total 55 Items" />
+      </CardContent>
+    </Card>
+  )
+}
+
+function StatusChecksCard() {
+  return (
+    <Card>
+      <CardTableHeader title="STATUS CHECKS" actionLabel="EXPORT" />
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Timestamp</TableHead>
+              <TableHead>Checked By</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Result</TableHead>
+              <TableHead>Details</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {STATUS_CHECKS_HISTORY.map((row, index) => (
+              <TableRow key={index}>
+                <TableCell className="whitespace-nowrap text-sm">
+                  {row.timestamp}
+                </TableCell>
+                <TableCell className="text-sm">{row.checkedBy}</TableCell>
+                <TableCell className="text-sm">{row.source}</TableCell>
+                <TableCell>
+                  <StatusBadge status={row.result} />
+                </TableCell>
+                <TableCell className="max-w-xs text-sm text-muted-foreground">
+                  {row.details}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <TablePaginationFooter totalLabel="Total 55 Items" />
+      </CardContent>
+    </Card>
+  )
+}
+
+function DeviceImageCard() {
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <div className="flex h-48 w-full items-center justify-center rounded bg-gray-200 text-sm text-gray-500">
+          Device Image
+        </div>
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
+            aria-label="Previous image"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          {[0, 1, 2].map((thumb) => (
+            <div
+              key={thumb}
+              className="size-12 shrink-0 rounded bg-gray-200"
+            />
+          ))}
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50"
+            aria-label="Next image"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -586,6 +894,7 @@ function DetailScreen({ onNavigate }) {
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <DeviceImageCard />
           <Card>
             <CardContent className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
               {fields.map(({ label, value }) => (
@@ -597,66 +906,10 @@ function DetailScreen({ onNavigate }) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle className="text-sm font-semibold tracking-wide">
-                STATUS CHECKS
-              </CardTitle>
-              <Button variant="outline" size="sm">
-                Export
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Timestamp</TableHead>
-                    <TableHead>Checked By</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Result</TableHead>
-                    <TableHead>Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {STATUS_CHECKS_HISTORY.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="whitespace-nowrap text-sm">
-                        {row.timestamp}
-                      </TableCell>
-                      <TableCell className="text-sm">{row.checkedBy}</TableCell>
-                      <TableCell className="text-sm">{row.source}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={row.result} />
-                      </TableCell>
-                      <TableCell className="max-w-xs text-sm text-muted-foreground">
-                        {row.details}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
-                <p className="text-sm text-muted-foreground">Total 55 Items</p>
-                <div className="flex items-center gap-1">
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                  <Button variant="outline" size="sm" className="min-w-8">
-                    1
-                  </Button>
-                  <Button variant="ghost" size="sm" className="min-w-8">
-                    2
-                  </Button>
-                  <Button variant="ghost" size="sm" className="min-w-8">
-                    3
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Next
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <RegistrationStatusCard />
+          <AccessoriesCard />
+          <SupportTicketsCard />
+          <StatusChecksCard />
         </div>
 
         <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[280px]">
