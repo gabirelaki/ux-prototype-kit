@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -127,6 +128,52 @@ function formatToday() {
 
 function countWords(text) {
   return text.trim() ? text.trim().split(/\s+/).length : 0
+}
+
+const STATUS_CHECKS_HISTORY = [
+  {
+    timestamp: 'Apr 22 2024, 12:50pm EST',
+    checkedBy: 'Jonathan Greenburg',
+    source: 'Source',
+    result: 'Pass',
+    details: 'Details of the status check would go here',
+  },
+  {
+    timestamp: 'Apr 22 2024, 12:50pm EST',
+    checkedBy: 'Jonathan Greenburg',
+    source: 'Source',
+    result: 'Pass',
+    details: 'Details of the status check would go here',
+  },
+  {
+    timestamp: 'Apr 22 2024, 12:50pm EST',
+    checkedBy: 'Jonathan Greenburg',
+    source: 'Source',
+    result: 'Pass',
+    details: 'Details of the status check would go here',
+  },
+]
+
+function GreenLink({ children, className }) {
+  return (
+    <span
+      className={cn(
+        'cursor-pointer font-medium text-green-600 hover:underline',
+        className,
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
+function DetailField({ label, children }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="mt-0.5 text-sm">{children}</div>
+    </div>
+  )
 }
 
 function StatusBadge({ status }) {
@@ -543,51 +590,180 @@ function DetailScreen({ onNavigate }) {
       <h1 className="mb-6 text-2xl font-semibold">{DETAIL_DEVICE.name}</h1>
 
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <Card className="min-w-0 flex-1">
-          <CardContent className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
-            {fields.map(({ label, value }) => (
-              <div key={label}>
-                <dt className="text-sm text-muted-foreground">{label}</dt>
-                <dd className="mt-1 text-sm font-medium">{value}</dd>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <Card>
+            <CardContent className="grid grid-cols-1 gap-6 pt-4 sm:grid-cols-2">
+              {fields.map(({ label, value }) => (
+                <div key={label}>
+                  <dt className="text-sm text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 text-sm font-medium">{value}</dd>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
 
-        <Card className="w-full shrink-0 lg:w-[280px]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold tracking-wide">
-              STATUS CHECK
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Button
-              className="w-full bg-green-600 text-white hover:bg-green-700"
-              onClick={() => openQuickCheck('Pass')}
-            >
-              PASS QUICK CHECK
-            </Button>
-            <Button
-              className="w-full bg-red-600 text-white hover:bg-red-700"
-              onClick={() => openQuickCheck('Fail')}
-            >
-              FAIL QUICK CHECK
-            </Button>
-            <Button variant="outline" className="w-full">
-              FULL STATUS CHECK
-            </Button>
-            <div className="space-y-2 border-t pt-4">
-              <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Last Check
-              </p>
-              <StatusBadge status={lastCheck.result} />
-              <p className="text-sm">{lastCheck.date}</p>
-              <p className="text-sm text-muted-foreground">
-                Checked by {lastCheck.by}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                STATUS CHECKS
+              </CardTitle>
+              <Button variant="outline" size="sm">
+                Export
+              </Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Checked By</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Details</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {STATUS_CHECKS_HISTORY.map((row, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {row.timestamp}
+                      </TableCell>
+                      <TableCell className="text-sm">{row.checkedBy}</TableCell>
+                      <TableCell className="text-sm">{row.source}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={row.result} />
+                      </TableCell>
+                      <TableCell className="max-w-xs text-sm text-muted-foreground">
+                        {row.details}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t px-4 py-3">
+                <p className="text-sm text-muted-foreground">Total 55 Items</p>
+                <div className="flex items-center gap-1">
+                  <Button variant="outline" size="sm" disabled>
+                    Previous
+                  </Button>
+                  <Button variant="outline" size="sm" className="min-w-8">
+                    1
+                  </Button>
+                  <Button variant="ghost" size="sm" className="min-w-8">
+                    2
+                  </Button>
+                  <Button variant="ghost" size="sm" className="min-w-8">
+                    3
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex w-full shrink-0 flex-col gap-4 lg:w-[280px]">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                STATUS CHECK
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button
+                className="w-full bg-green-600 text-white hover:bg-green-700"
+                onClick={() => openQuickCheck('Pass')}
+              >
+                PASS QUICK CHECK
+              </Button>
+              <Button
+                className="w-full bg-red-600 text-white hover:bg-red-700"
+                onClick={() => openQuickCheck('Fail')}
+              >
+                FAIL QUICK CHECK
+              </Button>
+              <Button variant="outline" className="w-full">
+                FULL STATUS CHECK
+              </Button>
+              <div className="space-y-2 border-t pt-4">
+                <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Last Check
+                </p>
+                <StatusBadge status={lastCheck.result} />
+                <p className="text-sm">{lastCheck.date}</p>
+                <p className="text-sm text-muted-foreground">
+                  Checked by {lastCheck.by}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-wide">
+                <Globe className="size-4 text-muted-foreground" />
+                ORGANIZATION
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DetailField label="Organization">
+                <GreenLink>City University</GreenLink>
+              </DetailField>
+              <DetailField label="ERP ID">
+                <span className="font-medium">199292929</span>
+              </DetailField>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                LOCATION
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex h-24 items-center justify-center rounded-md bg-gray-100 text-xs text-gray-400">
+                Map
+              </div>
+              <DetailField label="Location">
+                <GreenLink>State University</GreenLink>
+              </DetailField>
+              <DetailField label="Site">
+                <GreenLink>Health Building</GreenLink>
+              </DetailField>
+              <DetailField label="Placement">
+                <span className="font-medium">3rd Floor Gym</span>
+              </DetailField>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold tracking-wide">
+                ASSOCIATED USERS
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <DetailField label="Primary Contact">
+                <GreenLink>Sandra Hernandez</GreenLink>
+              </DetailField>
+              <DetailField label="Coordinator">
+                <GreenLink>Eduardo Costanza</GreenLink>
+              </DetailField>
+              <DetailField label="Responders">
+                <div className="flex flex-col gap-1">
+                  <GreenLink>James Turell</GreenLink>
+                  <GreenLink>Hal Park</GreenLink>
+                </div>
+              </DetailField>
+              <DetailField label="Instructor">
+                <GreenLink>Carol Smith</GreenLink>
+              </DetailField>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="mt-8">
